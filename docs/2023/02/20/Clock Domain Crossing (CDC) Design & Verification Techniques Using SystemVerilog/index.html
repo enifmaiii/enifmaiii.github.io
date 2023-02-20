@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+
+  <!-- Minima -->
+  <!-- Hexo theme created by @adisaktijrs -->
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+
+  
+  <title>Clock Domain Crossing (CDC) Design &amp; Verification Techniques Using SystemVerilog Note</title>
+  
+  <link rel="canonical" href="https://enifmaii.site/2023/02/20/Clock%20Domain%20Crossing%20(CDC)%20Design%20&amp;%20Verification%20Techniques%20Using%20SystemVerilog/">
+  
+  <meta name="description" content="亚稳态 metastability “Metastbility refers to signals that do not assume stable 0 or 1 states for some duration of time at some point during normal operat">
+  
+  
+  <meta name="author" content="enifmaii">
+  
+  
+  
+  <meta property="og:site_name" content="Enifmaii&#39;s Blog" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Clock Domain Crossing (CDC) Design &amp; Verification Techniques Using SystemVerilog Note" />
+  
+  <meta property="og:description" content="亚稳态 metastability “Metastbility refers to signals that do not assume stable 0 or 1 states for some duration of time at some point during normal operat">
+  
+  <meta property="og:url" content="https://enifmaii.site/2023/02/20/Clock%20Domain%20Crossing%20(CDC)%20Design%20&amp;%20Verification%20Techniques%20Using%20SystemVerilog/" />
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Clock Domain Crossing (CDC) Design &amp; Verification Techniques Using SystemVerilog Note">
+  
+  <meta name="twitter:description" content="亚稳态 metastability “Metastbility refers to signals that do not assume stable 0 or 1 states for some duration of time at some point during normal operat">
+  
+  
+  
+  
+  <meta name="twitter:url" content="https://enifmaii.site/2023/02/20/Clock%20Domain%20Crossing%20(CDC)%20Design%20&amp;%20Verification%20Techniques%20Using%20SystemVerilog/" />
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Preload fonts
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="preload" href="/fonts/dm-serif-display-v4-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-v2-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  
+<link rel="stylesheet" href="/css/normalize.css">
+
+  
+<link rel="stylesheet" href="/css/skeleton.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+<link rel="stylesheet" href="/css/prism-dark.css">
+
+  
+<link rel="stylesheet" href="/css/prism-line-numbers.css">
+
+  <!-- User css -->
+  
+  
+<link rel="stylesheet" href="/css/user.css">
+
+  
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+
+  <!-- Custom Theme Color Style
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <style>
+  a:not(.icon) {
+    text-decoration-color: #0FA0CE;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 50%,
+      #0FA0CE 50%
+    );
+  }
+  blockquote {
+    border-left: 8px solid #0FA0CE;
+  }
+  .nanobar .bar {
+    background: #0FA0CE;
+  }
+  .button.button-primary:hover,
+  button.button-primary:hover,
+  input[type="submit"].button-primary:hover,
+  input[type="reset"].button-primary:hover,
+  input[type="button"].button-primary:hover,
+  .button.button-primary:focus,
+  button.button-primary:focus,
+  input[type="submit"].button-primary:focus,
+  input[type="reset"].button-primary:focus,
+  input[type="button"].button-primary:focus {
+    background-color: #0FA0CE;
+    border-color: #0FA0CE;
+  }
+  input[type="email"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  input[type="text"]:focus,
+  input[type="tel"]:focus,
+  input[type="url"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  select:focus {
+    border: 1px solid #0FA0CE;
+  }
+</style>
+
+  <!-- Google Analytics (With Privacy Settings On)
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  
+
+  
+  <script src="/js/pic.min.js" defer></script>
+  
+
+  
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div>
+
+        <div class="row">
+  <div class="two columns" style="max-width: 50px">
+    <h1 class="mt-2 mode">
+      <div onclick=setDarkMode(true) id="darkBtn">🌑</div>
+      <div onclick=setDarkMode(false) id="lightBtn" class=hidden>☀️</div>
+      <script >
+        if (localStorage.getItem('preferredTheme') == 'dark') {
+          setDarkMode(true)
+        }
+        function setDarkMode(isDark) {
+          var darkBtn = document.getElementById('darkBtn')
+          var lightBtn = document.getElementById('lightBtn')
+          if (isDark) {
+            lightBtn.style.display = "block"
+            darkBtn.style.display = "none"
+            localStorage.setItem('preferredTheme', 'dark');
+          } else {
+            lightBtn.style.display = "none"
+            darkBtn.style.display = "block"
+            localStorage.removeItem('preferredTheme');
+          }
+          document.body.classList.toggle("darkmode");
+        }
+      </script>
+    </h1>
+  </div>
+
+  <div class="six columns ml-1">
+    <h1 class="mt-2">
+      Hi hi hi 😇 ~
+    </h1>
+  </div>
+
+  <div class="twelve columns">
+    <div class="row">
+      <div class="nine columns left">
+        <a href="/">Home</a>
+        
+          
+          <a href="/Works" class="ml">Works</a>
+          
+        
+          
+          <a href="/About" class="ml">About</a>
+          
+        
+        
+          
+            <a href="mailto:enifmaii@163.com" target="_blank" class="ml">Email</a>
+          
+        
+      </div>
+    </div>
+    <hr style="margin-bottom: 2.6rem">
+  </div>
+</div>
+
+        <div class="trans">
+            <h2>Clock Domain Crossing (CDC) Design & Verification Techniques Using SystemVerilog Note</h2>
+
+  <p><img src="/attachments/QAZIRTMD/Clock%20Domain%20Crossing%20(CDC)%20Design%20&%20Verification%20Techniques%20Using%20SystemVerilog.svg" alt="mindmap"></p>
+<h1 id="亚稳态-metastability"><a href="#亚稳态-metastability" class="headerlink" title="亚稳态 metastability"></a>亚稳态 metastability</h1><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22XRMJSX9H%22%2C%22color%22%3A%22%235fb236%22%2C%22pageLabel%22%3A%226%22%2C%22position%22%3A%7B%22pageIndex%22%3A5%2C%22rects%22%3A%5B%5B71.999%2C391.944%2C529.769%2C403.284%5D%2C%5B71.999%2C377.784%2C533.317%2C389.124%5D%2C%5B71.999%2C363.624%2C409.074%2C374.964%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%226%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=6&#x26;annotation=XRMJSX9H">“Metastbility refers to signals that <strong>do not assume stable 0 or 1 states for some duration of time</strong> at some point during normal operation of a design. In a multi-clock design, metastability cannot be avoided but the detrimental effects of metastability can be neutralized.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%226%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 6</a></span>)</span></p>
+</blockquote>
+<p><img src="/attachments/QAZIRTMD/6UIU2K54.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/6UIU2K54&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%228M5W6YYT%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%226%22%2C%22position%22%3A%7B%22pageIndex%22%3A5%2C%22rects%22%3A%5B%5B77.49999999999999%2C69.50000000000004%2C560.625%2C356.9999999999999%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%226%22%7D%7D&quot; width=&quot;805&quot; height=&quot;479&quot; src=&quot;attachments/6UIU2K54.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%226%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 6</a></span>)</span></p>
+<ul>
+<li>需要明确的是亚稳态最终会在一段时间后稳定下来（一般在一个时钟内），但是稳定后的状态是不可预知的，也与造成亚稳态时的输入电平无关。</li>
+</ul>
+<h2 id="亚稳态出现的原因"><a href="#亚稳态出现的原因" class="headerlink" title="亚稳态出现的原因"></a>亚稳态出现的原因</h2><blockquote>
+<p>Every flip-flop that is used in any design has a specified setup and hold time, or the time in which the data input is not legally permitted to change before and after a rising clock edge” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%227%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 7</a></span>)</span></p>
+</blockquote>
+<ul>
+<li>建立时间（setup）：触发器输入需要在时钟到来前保持稳定的时间</li>
+<li>保持时间（hold）：触发器输入需要在时钟到来后保持稳定的时间。</li>
+</ul>
+<p>每个物理实际上的触发器要保证输出值的正常必须满足建立时间（setup）和保持时间（hold）。果无法满足该时间窗的限制则称”时序违例”，导致触发器输出出现亚稳态。</p>
+<h2 id="亚稳态存在的风险"><a href="#亚稳态存在的风险" class="headerlink" title="亚稳态存在的风险"></a>亚稳态存在的风险</h2><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22TDCGRTN6%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%227%22%2C%22position%22%3A%7B%22pageIndex%22%3A6%2C%22rects%22%3A%5B%5B343.558%2C492.264%2C503.257%2C503.604%5D%2C%5B71.999%2C478.104%2C521.988%2C489.444%5D%2C%5B71.999%2C463.944%2C227.267%2C475.284%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%227%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=7&#x26;annotation=TDCGRTN6">“a metastable output that traverses additional logic in the receiving clock domain can cause illegal signal values to be propagated throughout the rest of the design”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%227%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 7</a></span>)</span></p>
+</blockquote>
+<p><img src="/attachments/QAZIRTMD/LZVUPTSJ.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/LZVUPTSJ&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22VFETW9P5%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%227%22%2C%22position%22%3A%7B%22pageIndex%22%3A6%2C%22rects%22%3A%5B%5B60.27%2C112.854%2C554.157%2C434.022%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%227%22%7D%7D&quot; width=&quot;823&quot; height=&quot;535&quot; src=&quot;attachments/LZVUPTSJ.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%227%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 7</a></span>)</span> 异步亚稳态</p>
+<p>如果不对亚稳态进行处理，触发器的亚稳态输出可能在下级电路的组合逻辑中传递，造成下级电路信号的错误。</p>
+<h1 id="同步器-Synchronizer"><a href="#同步器-Synchronizer" class="headerlink" title="同步器 Synchronizer"></a>同步器 Synchronizer</h1><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22QIBA8NAR%22%2C%22color%22%3A%22%235fb236%22%2C%22pageLabel%22%3A%228%22%2C%22position%22%3A%7B%22pageIndex%22%3A7%2C%22rects%22%3A%5B%5B98.999%2C285.144%2C512.748%2C296.484%5D%2C%5B98.999%2C270.984%2C451.406%2C282.324%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%228%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=8&#x26;annotation=QIBA8NAR">“A synchronizer is a device that samples an asynchronous signal and outputs a version of the signal that has transitions synchronized to a local or sample clock.</a></span>“ <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%228%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 8</a></span>)</span></p>
+</blockquote>
+<p>同步器是将跨时钟的异步信号传递到同步时钟域的一种器件。简单的同步操作通常不能保证跨时钟信号传递的可靠性，根据不同可靠性的要求，我们对跨时钟信号的处理有下面两个视角：</p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22DTJEPYWC%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%228%22%2C%22position%22%3A%7B%22pageIndex%22%3A7%2C%22rects%22%3A%5B%5B72%2C552.504%2C428.034%2C563.844%5D%2C%5B72%2C538.344%2C386.754%2C549.684%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%228%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=8&#x26;annotation=DTJEPYWC">“(1) It is permitted to miss samples that are passed between clock domains.</a></span></p>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22DTJEPYWC%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%228%22%2C%22position%22%3A%7B%22pageIndex%22%3A7%2C%22rects%22%3A%5B%5B72%2C552.504%2C428.034%2C563.844%5D%2C%5B72%2C538.344%2C386.754%2C549.684%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%228%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=8&#x26;annotation=DTJEPYWC">(2) Every signal passed between clock domains must be sampled.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%228%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 8</a></span>)</span></p>
+</blockquote>
+<h2 id="”打两拍“同步器-Two-flip-flop-synchronizer"><a href="#”打两拍“同步器-Two-flip-flop-synchronizer" class="headerlink" title="”打两拍“同步器 Two flip-flop synchronizer"></a>”打两拍“同步器 Two flip-flop synchronizer</h2><p><img src="/attachments/QAZIRTMD/G8MIQPRZ.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/G8MIQPRZ&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%225GZJDFRL%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%229%22%2C%22position%22%3A%7B%22pageIndex%22%3A8%2C%22rects%22%3A%5B%5B48.971%2C404.647%2C550.588%2C766.412%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%229%22%7D%7D&quot; width=&quot;836&quot; height=&quot;603&quot; src=&quot;attachments/G8MIQPRZ.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%229%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 9</a></span>)</span></p>
+<p>一般情况下，寄存器的亚稳态输出会在一个时钟周期内稳定。”打两排“同步器是通过触发器的时钟触发特性，将亚稳态限制在两个触发器之间，从而避免向下级电路传动亚稳态。</p>
+<ul>
+<li>需要指出的是，图示的valid信号被成功同步是由于亚稳态稳定后，刚好稳定到输入的逻辑1，事实上其也可能稳定到0。因此经过”打两怕“同步器的跨时钟处理后，信号可能被成功同步，也可能未被成功采集到而丢失，但其完成了避免亚稳态传递的任务。</li>
+</ul>
+<blockquote>
+<p>It is theoretically possible for the stage-1 signal to still be sufficiently metastable by the time the signal is clocked into the second stage to cause the stage-2 output signal to also go metastable.” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%229%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 9</a></span>)</span></p>
+</blockquote>
+<p>理论上，亚稳态信号可能无法在一个时钟周期内稳定，但是经过同步器后其出现亚稳态的概率大幅下降（显著提高MTBF），能够满足绝大多数跨时钟域的同步要求。</p>
+<h2 id="MTBF-平均故障时间间隔"><a href="#MTBF-平均故障时间间隔" class="headerlink" title="MTBF 平均故障时间间隔"></a>MTBF 平均故障时间间隔</h2><p><img src="/attachments/QAZIRTMD/PW9TW4EV.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/PW9TW4EV&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22648B9TPE%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2210%22%2C%22position%22%3A%7B%22pageIndex%22%3A9%2C%22rects%22%3A%5B%5B116.695%2C463.525%2C475.856%2C583.678%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%7D&quot; width=&quot;599&quot; height=&quot;200&quot; src=&quot;attachments/PW9TW4EV.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 10</a></span>)</span></p>
+<blockquote>
+<p>Without repeating the equation and analysis, it should be pointed out that two of the most important factors that directly impact the MTBF of a synchronizer circuit are, the sample clock frequency (how fast are signals being sampled into the receiving clock domain) and the data change frequency (how fast is the data changing that crosses the CDC boundary).” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 10</a></span>)</span></p>
+</blockquote>
+<p>有论文严谨的对跨时钟域的MTBF进行了讨论。MTBF（mean time before failure）是一个概率上的时间参数，它衡量了系统出现故障概率上的间隔时间（出现故障的时间期望），其数值越大表示系统出现错误的概率越小。”打两拍”同步器可以显著提高MTBF，从而减小亚稳态出现的风险。</p>
+<h2 id="“打三拍”同步器-Three-filp-flop-synchronizer"><a href="#“打三拍”同步器-Three-filp-flop-synchronizer" class="headerlink" title="“打三拍”同步器 Three filp-flop synchronizer"></a>“打三拍”同步器 Three filp-flop synchronizer</h2><blockquote>
+<p>For some very high speed designs, the MTBF of a two-flop synchronizer is too short and a third flop is added to increase the MTBF to a satisfactory duration of time.” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 10</a></span>)</span> 打三拍同步器</p>
+</blockquote>
+<p><img src="/attachments/QAZIRTMD/3U5EZ9L9.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/3U5EZ9L9&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%224FHDUEQV%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2210%22%2C%22position%22%3A%7B%22pageIndex%22%3A9%2C%22rects%22%3A%5B%5B123.881%2C231.823%2C484.665%2C320.661%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%7D&quot; width=&quot;601&quot; height=&quot;148&quot; src=&quot;attachments/3U5EZ9L9.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2210%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 10</a></span>)</span></p>
+<h2 id="跨时钟信号的输出"><a href="#跨时钟信号的输出" class="headerlink" title="跨时钟信号的输出"></a>跨时钟信号的输出</h2><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22YKZXFDYE%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2211%22%2C%22position%22%3A%7B%22pageIndex%22%3A10%2C%22rects%22%3A%5B%5B72%2C204.024%2C507.549%2C215.364%5D%2C%5B72%2C189.864%2C531.748%2C201.204%5D%2C%5B72%2C175.704%2C522.037%2C187.044%5D%2C%5B72%2C161.544%2C507.579%2C172.884%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2211%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=11&#x26;annotation=YKZXFDYE">“<strong>Signals in the sending clock domain should be synchronized before being passed to a CDC boundary</strong>. The synchronization of signals from the sending clock domain reduces the number of edges that can be sampled in the receiving clock domain, effectively reducing the data-change frequency in the MTBF equation and hence increasing the time between calculated failures”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2211%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 11</a></span>)</span></p>
+</blockquote>
+<p>跨时钟信号的输出，在输出前必须经过Register缓存，其能够减小组合逻辑输出带来的亚稳态风险（组合逻辑不按照时钟变化，中间可能出现不稳定的跳变）。</p>
+<p><img src="/attachments/QAZIRTMD/D8PKPYXW.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/D8PKPYXW&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22XCRFWADP%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2211%22%2C%22position%22%3A%7B%22pageIndex%22%3A10%2C%22rects%22%3A%5B%5B49.355%2C344.845%2C563.632%2C686.874%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2211%22%7D%7D&quot; width=&quot;857&quot; height=&quot;570&quot; src=&quot;attachments/D8PKPYXW.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2211%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 11</a></span>)</span> CDC信号组合逻辑数据增加亚稳态风险</p>
+<p><img src="/attachments/QAZIRTMD/CB4LAWVY.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/CB4LAWVY&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22KKQKX2GB%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2212%22%2C%22position%22%3A%7B%22pageIndex%22%3A11%2C%22rects%22%3A%5B%5B42.939%2C401.603%2C551.294%2C755.477%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2212%22%7D%7D&quot; width=&quot;847&quot; height=&quot;590&quot; src=&quot;attachments/CB4LAWVY.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2212%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 12</a></span>)</span> CDC信号寄存器数据减小亚稳态风险</p>
+<h1 id="单bit跨时钟域设计"><a href="#单bit跨时钟域设计" class="headerlink" title="单bit跨时钟域设计"></a>单bit跨时钟域设计</h1><h2 id="“Three-edge”-规则（1-5X频率）"><a href="#“Three-edge”-规则（1-5X频率）" class="headerlink" title="“Three edge” 规则（1.5X频率）"></a>“Three edge” 规则（1.5X频率）</h2><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%225CB6R4CS%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2213%22%2C%22position%22%3A%7B%22pageIndex%22%3A12%2C%22rects%22%3A%5B%5B209.76%2C317.544%2C518.078%2C328.884%5D%2C%5B72%2C303.384%2C536.799%2C314.724%5D%2C%5B72%2C289.224%2C528.69%2C300.564%5D%2C%5B72%2C275.064%2C280.647%2C286.404%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=13&#x26;annotation=5CB6R4CS">“when passing one CDC signal between clock domains through a two-flip-flop synchronizer, the CDC signal must be wider than 1-1&#x2F;2 times the cycle width of the receiving domain clock period. Littereick described this requirement as “input data values must be stable for three destination clock edges.””</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 13</a></span>)</span></p>
+</blockquote>
+<p>当进行跨时钟域信号传递的时候，只要发送的脉冲信号宽度大于接受时钟周期的1.5X，就可以保证信号被可靠的采样，因为这种情况下至少可以保证一次正常的非亚稳态的采样，从而不会出现亚稳态的风险，只需要通过同步器同步即可。</p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22848WXJPU%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2213%22%2C%22position%22%3A%7B%22pageIndex%22%3A12%2C%22rects%22%3A%5B%5B72%2C436.824%2C532.838%2C448.164%5D%2C%5B72%2C422.664%2C531.869%2C434.004%5D%2C%5B72%2C408.504%2C392.875%2C419.844%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=13&#x26;annotation=848WXJPU">“Synchronizing slower control signals into a faster clock domain is generally not a problem if the faster clock domain is 1.5X the frequency (or more) of the slower clock domain, since the faster clock signal will sample the slower CDC signal one or more times.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 13</a></span>)</span></p>
+</blockquote>
+<p>如果将信号从慢时钟传递到快时钟，当快时钟频率是慢时钟频率1.5X的时候，快时钟能够保证至少对慢时钟进行一次采样，从而保证可靠的传递。</p>
+<h3 id="传递一个快时钟CDC信号"><a href="#传递一个快时钟CDC信号" class="headerlink" title="传递一个快时钟CDC信号"></a>传递一个快时钟CDC信号</h3><p><img src="/attachments/QAZIRTMD/DGBKCDH6.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/DGBKCDH6&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22ITVJ2VYL%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2214%22%2C%22position%22%3A%7B%22pageIndex%22%3A13%2C%22rects%22%3A%5B%5B55.32999999999999%2C282.4797742238946%2C550.415%2C618.7924528301885%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2214%22%7D%7D&quot; width=&quot;825&quot; height=&quot;560&quot; src=&quot;attachments/DGBKCDH6.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2214%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 14</a></span>)</span></p>
+<p>当从快时钟传递一个CDC信号到慢时钟的时候，如果快始终信号只维持一个周期，有可能出现信号无法被慢时钟采集到的情况，因此从快时钟传递信号到慢时钟的时候可能需要进行信号脉宽的拓展。</p>
+<h3 id="传递一个”长一点“的快时钟CDC信号"><a href="#传递一个”长一点“的快时钟CDC信号" class="headerlink" title="传递一个”长一点“的快时钟CDC信号"></a>传递一个”长一点“的快时钟CDC信号</h3><p><img src="/attachments/QAZIRTMD/IGA5QRBB.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/IGA5QRBB&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22FMPBKD8T%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2215%22%2C%22position%22%3A%7B%22pageIndex%22%3A14%2C%22rects%22%3A%5B%5B55.811%2C282%2C548.491%2C590.887%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2215%22%7D%7D&quot; width=&quot;821&quot; height=&quot;515&quot; src=&quot;attachments/IGA5QRBB.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2215%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 15</a></span>)</span></p>
+<p>快时钟将信号传递给慢时钟需要进行信号脉宽拓展，但是应该拓展多宽呢？上图显示的一种情况是，快时钟的信号脉宽长度之比慢时钟的周期”slightly wider“，这种情况下可能同时出现两次亚稳态，从而导致信号在两次采样中都无法被传递，因此如果只是对信号拓展到”slightly wider“的情况也是无法保证可靠传递的。</p>
+<h3 id="为什么是1-5X-？"><a href="#为什么是1-5X-？" class="headerlink" title="为什么是1.5X ？"></a>为什么是1.5X ？</h3><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22WNGQ3K9E%22%2C%22color%22%3A%22%235fb236%22%2C%22pageLabel%22%3A%2213%22%2C%22position%22%3A%7B%22pageIndex%22%3A12%2C%22rects%22%3A%5B%5B72%2C246.744%2C536.749%2C258.084%5D%2C%5B72%2C232.584%2C511.238%2C243.924%5D%2C%5B72%2C218.424%2C535.598%2C229.764%5D%2C%5B72%2C204.264%2C515.129%2C215.604%5D%2C%5B72%2C190.104%2C156.949%2C201.444%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=13&#x26;annotation=WNGQ3K9E">“For exceptionally long source and destination clock frequencies, this requirement could probably be safely relaxed to 1-1&#x2F;4 times the cycle time of the receiving clock domain or less, but the “three edge” guideline is the safest initial design condition, and is easier to prove through the use of SystemVerilog assertions than to dynamically measure a fractional width of a CDC signal during simulation”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2213%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 13</a></span>)</span></p>
+</blockquote>
+<p>事实上，1.5X并不是一个强制要求，只是通过上面的描述可以知道信号脉宽必须比接收时钟的周期要长，但是又不能”slightly wider“。1.5X这个数值容易在SystemVerilog中进行检查，也能保证相当的可靠性。</p>
+<h2 id="单比特CDC信号的开环传递"><a href="#单比特CDC信号的开环传递" class="headerlink" title="单比特CDC信号的开环传递"></a>单比特CDC信号的开环传递</h2><blockquote>
+<p>Open-loop sampling can be used when relative clock frequencies are fixed and properly analyzed.” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2216%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 16</a></span>)</span></p>
+</blockquote>
+<p>当接收时钟和发送时钟频率有固定的比例关系的时候，只要满足”Three edges“准则，就能保证信号的准确传递。</p>
+<p><img src="/attachments/QAZIRTMD/SGX9YPCY.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/SGX9YPCY&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22DWRAPGAW%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2216%22%2C%22position%22%3A%7B%22pageIndex%22%3A15%2C%22rects%22%3A%5B%5B59.375%2C128.25%2C542.5%2C446.375%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2216%22%7D%7D&quot; width=&quot;805&quot; height=&quot;530&quot; src=&quot;attachments/SGX9YPCY.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2216%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 16</a></span>)</span></p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22R6EGEK7K%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%2216%22%2C%22position%22%3A%7B%22pageIndex%22%3A15%2C%22rects%22%3A%5B%5B148.319%2C529.704%2C512.187%2C541.044%5D%2C%5B72%2C515.544%2C522.939%2C526.884%5D%2C%5B72%2C501.384%2C483.233%2C512.724%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2216%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=16&#x26;annotation=R6EGEK7K">“the largest potential problem related to an open-loop solution is that another engineer might mistake the solution for a general purpose solution, or the design requirements might change and an engineer might fail to re-analyze the original open loop solution.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2216%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 16</a></span>)</span></p>
+</blockquote>
+<p>开环控制存在一定的潜在风险，使用该跨时钟模组的工程师可能把该模组当成通用模块使用，而导致不满足”Three edges”准则，从而导致潜在的时钟问题。但是其可以通过SystemVerilog对条件进行断言检查。</p>
+<h2 id="单比特CDC信号的闭环传递"><a href="#单比特CDC信号的闭环传递" class="headerlink" title="单比特CDC信号的闭环传递"></a>单比特CDC信号的闭环传递</h2><p><img src="/attachments/QAZIRTMD/YBSRWRUL.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/YBSRWRUL&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22VLMFL6W7%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2217%22%2C%22position%22%3A%7B%22pageIndex%22%3A16%2C%22rects%22%3A%5B%5B67.9452936444087%2C201.1713596138375%2C546.566%2C561.5768302493966%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2217%22%7D%7D&quot; width=&quot;798&quot; height=&quot;601&quot; src=&quot;attachments/YBSRWRUL.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2217%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 17</a></span>)</span></p>
+<p>CDC信号的闭环传递非常可靠且安全，能够适用于不满足1.5X的工作情况，但是会给跨时钟带来很大的延迟。</p>
+<h1 id="多bit跨时钟域设计"><a href="#多bit跨时钟域设计" class="headerlink" title="多bit跨时钟域设计"></a>多bit跨时钟域设计</h1><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22G5K22IK7%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2218%22%2C%22position%22%3A%7B%22pageIndex%22%3A17%2C%22rects%22%3A%5B%5B71.999%2C641.064%2C533.077%2C652.404%5D%2C%5B71.999%2C626.904%2C537.638%2C638.244%5D%2C%5B71.999%2C612.744%2C351.354%2C624.084%5D%2C%5B72%2C584.424%2C517.169%2C595.764%5D%2C%5B72%2C570.264%2C536.508%2C581.604%5D%2C%5B72%2C556.104%2C139.914%2C567.444%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2218%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=18&#x26;annotation=G5K22IK7">“A frequent mistake made by engineers when working on multi-clock designs is passing multiple CDC bits required in the same transaction from one clock domain to another and overlooking the importance of the synchronized sampling of the CDC bits. The problem is that multiple signals that are synchronized to one clock will experience small data changing skews that can occasionally be sampled on different rising clock edges in a second clock domain.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2218%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 18</a></span>)</span></p>
+</blockquote>
+<p>多Bit跨时钟的信号传输中，通常需要多Bit信号被同时采样，因为多个Bit有固定的相位关系。然而多个Bit的跨时钟传输如果只是对每个Bit单纯的使用同步器，由于skew的存在，通过同步器后多个Bit不一定能保持原有的相位关系，即可能某个bit出现了时序亚稳态错误，则会延迟一个周期被采样。</p>
+<p><img src="/attachments/QAZIRTMD/JT8W2D4D.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/JT8W2D4D&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22ZLQM4IHY%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2219%22%2C%22position%22%3A%7B%22pageIndex%22%3A18%2C%22rects%22%3A%5B%5B90.25552050473185%2C300.18%2C560.8391167192428%2C614%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2219%22%7D%7D&quot; width=&quot;784&quot; height=&quot;523&quot; src=&quot;attachments/JT8W2D4D.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2219%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 19</a></span>)</span></p>
+<p>在上图所示的时序中b_load和b_en应该被同步采样，但是由于b_en跳变的时候刚好为aclk的时钟边沿附件，因而出现亚稳态，导致信号可能发生丢失的情况，从而延迟输出造成错误。这是多比特跨时钟可能出现潜在问题的基本原因。</p>
+<h2 id="Consolidation-融合-消除不必要的多bit"><a href="#Consolidation-融合-消除不必要的多bit" class="headerlink" title="Consolidation 融合-消除不必要的多bit"></a>Consolidation 融合-消除不必要的多bit</h2><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22NKI38ZCB%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%2220%22%2C%22position%22%3A%7B%22pageIndex%22%3A19%2C%22rects%22%3A%5B%5B232.319%2C657.624%2C530.139%2C668.964%5D%2C%5B71.999%2C643.464%2C185.154%2C654.804%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2220%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=20&#x26;annotation=NKI38ZCB">“Consolidation will remove the potential of two control signals arriving shifted in time.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2220%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 20</a></span>)</span></p>
+</blockquote>
+<ul>
+<li>对于成对同时出现的控制信号，可以将其融合为一个Bit进行传输，从而避免潜在的延迟带来的问题。（如上图Figure-12）</li>
+</ul>
+<p> </p>
+<p><img src="/attachments/QAZIRTMD/92HHP4U6.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/92HHP4U6&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22KZZ2LS76%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2220%22%2C%22position%22%3A%7B%22pageIndex%22%3A19%2C%22rects%22%3A%5B%5B71.5%2C327.5%2C558.5%2C638%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2220%22%7D%7D&quot; width=&quot;812&quot; height=&quot;518&quot; src=&quot;attachments/92HHP4U6.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2220%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 20</a></span>)</span></p>
+<p><u>一般地，对于有固定关系的多bit控制信号，都可以将其融合为一个bit的跨时钟信号进行传递，并在新的时钟域对信号进行重建。</u></p>
+<h2 id="MCP-多时钟路径策略"><a href="#MCP-多时钟路径策略" class="headerlink" title="MCP 多时钟路径策略"></a>MCP 多时钟路径策略</h2><p>在无法融合为单bit进行跨时钟域设计的情况下，就需要进行采用多bit的跨时钟设计策略，主要有<strong>MCP设计策略与异步FIFO策略</strong>。</p>
+<p><img src="/attachments/QAZIRTMD/7VQWUGZ8.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/7VQWUGZ8&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22P3D753VG%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2223%22%2C%22position%22%3A%7B%22pageIndex%22%3A22%2C%22rects%22%3A%5B%5B67.6813495782568%2C381.8969072164948%2C538.0093720712277%2C656.0637300843488%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2223%22%7D%7D&quot; width=&quot;784&quot; height=&quot;457&quot; src=&quot;attachments/7VQWUGZ8.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2223%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 23</a></span>)</span></p>
+<p>上图是跨时钟域进行编码信号的传递，由于编码的多个bit无法被同时采样，可能出现中间的错误状态。本质原因都是多bit的传输中可能出现各别bit的亚稳态错误，而导致的采样延时。</p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22TSJYM4G5%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%2224%22%2C%22position%22%3A%7B%22pageIndex%22%3A23%2C%22rects%22%3A%5B%5B72%2C116.784%2C534.037%2C128.124%5D%2C%5B72%2C102.624%2C515.969%2C113.964%5D%2C%5B72%2C88.464%2C503.268%2C99.804%5D%2C%5B72%2C74.304%2C322.554%2C85.644%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2224%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=24&#x26;annotation=TSJYM4G5">“This strategy passes multiple CDC signals without synchronization, and simultaneously passes a synchronized enable signal to the receiving clock domain. The receiving clock domain is not allowed to sample the multi-bit CDC signals until the synchronized enable passes through synchronization and arrives at the receiving register.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2224%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 24</a></span>)</span></p>
+</blockquote>
+<p>MCP策略是指将数据通路和控制路径分离，将数据直接不经同步直接传递给另一时钟域，而将控制信号同步后传递个另一时钟域，通过控制信号控制使得只有在数据稳定的情况下才对数据进行采样，从而避免数据多bit的跨时钟域问题。</p>
+<h3 id="MCP使能脉冲生成器"><a href="#MCP使能脉冲生成器" class="headerlink" title="MCP使能脉冲生成器"></a>MCP使能脉冲生成器</h3><p><img src="/attachments/QAZIRTMD/LF5QZWDD.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/LF5QZWDD&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%227993LM83%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2226%22%2C%22position%22%3A%7B%22pageIndex%22%3A25%2C%22rects%22%3A%5B%5B42.17199999999998%2C575.6160787530762%2C551.7539999999998%2C729.74569319114%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2226%22%7D%7D&quot; width=&quot;849&quot; height=&quot;257&quot; src=&quot;attachments/LF5QZWDD.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2226%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 26</a></span>)</span></p>
+<p><img src="/attachments/QAZIRTMD/ZFVWUDU4.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/ZFVWUDU4&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22ITGIJ3KD%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2225%22%2C%22position%22%3A%7B%22pageIndex%22%3A24%2C%22rects%22%3A%5B%5B67.681%2C215.561%2C535.715%2C378.455%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2225%22%7D%7D&quot; width=&quot;780&quot; height=&quot;271&quot; src=&quot;attachments/ZFVWUDU4.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2225%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 25</a></span>)</span></p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22BGE4Y99U%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2225%22%2C%22position%22%3A%7B%22pageIndex%22%3A24%2C%22rects%22%3A%5B%5B71.999%2C487.704%2C532.049%2C499.044%5D%2C%5B71.999%2C473.544%2C148.914%2C484.884%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2225%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=25&#x26;annotation=BGE4Y99U">“A key feature of this synchronized enable pulse generation is that the polarity of the input signal does not matter.”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2225%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 25</a></span>)</span></p>
+</blockquote>
+<p>MCP跨时钟策略通常采用同步边沿检测器作为使能输出信号，因此同步域使能信号的极性就无关紧要。</p>
+<h3 id="MCP-with-feedback-闭环传递"><a href="#MCP-with-feedback-闭环传递" class="headerlink" title="MCP with feedback 闭环传递"></a>MCP with feedback 闭环传递</h3><p><img src="/attachments/QAZIRTMD/7ZXNLU2W.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/7ZXNLU2W&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%223XGLAK9I%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2227%22%2C%22position%22%3A%7B%22pageIndex%22%3A26%2C%22rects%22%3A%5B%5B69.785%2C354.714%2C522.133%2C668.495%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2227%22%7D%7D&quot; width=&quot;754&quot; height=&quot;523&quot; src=&quot;attachments/7ZXNLU2W.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2227%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 27</a></span>)</span> 利用MCP脉冲发生器将q反馈给发送端的闭环模型</p>
+<p>在该模型下，MCP使能脉冲发生器会反馈回来一个接收端接收到的使能信号，该信号是发送端使能信号延迟三个接收端周期后得到的，因此也是极性不敏感的，需要通过MCP脉冲发生器进行接收，当接收到信号后表示接收端已经成功得到数据。</p>
+<h3 id="MCP-with-feedback-acknowledge-带握手闭环传递"><a href="#MCP-with-feedback-acknowledge-带握手闭环传递" class="headerlink" title="MCP with feedback acknowledge 带握手闭环传递"></a>MCP with feedback acknowledge 带握手闭环传递</h3><p><img src="/attachments/QAZIRTMD/4WRBBGZZ.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/4WRBBGZZ&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22ASFC32R3%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2228%22%2C%22position%22%3A%7B%22pageIndex%22%3A27%2C%22rects%22%3A%5B%5B75.30762920426578%2C304.5089999999999%2C541.7129999999997%2C601.2206726825268%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2228%22%7D%7D&quot; width=&quot;777&quot; height=&quot;494&quot; src=&quot;attachments/4WRBBGZZ.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2228%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 28</a></span>)</span></p>
+<p>反馈不带握手的MCP模型，默认的是接收端在接收到MCP脉冲信号时是空闲状态。在许多情况下，接收端可能正在处理数据而无法响应，在无握手的闭环模型下，发送端可能进行下一次的数据发送，从而导致之前的数据丢失。这种情况下，接收端需要自行维护一个状态机来确认当前的工作状态并向接收端反馈握手信号。</p>
+<h2 id="异步FIFO"><a href="#异步FIFO" class="headerlink" title="异步FIFO"></a>异步FIFO</h2><blockquote>
+<p>Passing multiple bits, whether data bits or control bits, can be done through an asynchronous FIFO. An asynchronous FIFO is a shared memory or register buffer where data is inserted from the write clock domain and data is removed from the read clock domain. Since both sender and receiver operate within their own respective clock domains, using a dual-port buffer, such as a FIFO, is a safe way to pass multi-bit values between clock domains.” <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2234%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 34</a></span>)</span></p>
+</blockquote>
+<p>异步FIFO可以用来传递多bit的控制信号或者多bit的数据，其结构概念即是软件意义上的先进先出队列。跨时钟域的潜在风险来源于数据读（接收端采样）的时候对同一寄存器发生数据写（发送端跳变），因此避免同时对一个寄存器进行读写操作就可以避免跨时钟的亚稳态风险稳定。异步FIFO通过读写指针将读和写的寄存器对象隔离开，从而避免同时读写带来的时序风险。</p>
+<h3 id="Gray-counter-格雷码计数器"><a href="#Gray-counter-格雷码计数器" class="headerlink" title="Gray counter 格雷码计数器"></a>Gray counter 格雷码计数器</h3><blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22KB4IUWD5%22%2C%22color%22%3A%22%23ff6666%22%2C%22pageLabel%22%3A%2230%22%2C%22position%22%3A%7B%22pageIndex%22%3A29%2C%22rects%22%3A%5B%5B71.999%2C643.464%2C536.748%2C654.804%5D%2C%5B71.999%2C629.304%2C490.188%2C640.644%5D%2C%5B71.999%2C615.144%2C536.708%2C626.484%5D%2C%5B71.999%2C600.984%2C198.468%2C612.324%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2230%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=30&#x26;annotation=KB4IUWD5">“Gray codes are named after Frank Gray[4] and the safest counters that can be used in multi-clock designs are Gray code counters. Gray codes only allow one bit to change for each clock transition, eliminating the problem associated with trying to synchronize multiple changing CDC bits across a clock domain”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2230%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 30</a></span>)</span></p>
+</blockquote>
+<p>格雷码计数器是跨时钟设计中最安全的计数器，其有最重要的特征就是单个时钟周期内计数器的数值只有一位发生变化，因此其不会在同一时刻出多bit的数据变换而导致编码数据被错误采样，最坏的情况就是计数器的数值没有被采样到，这在FIFO的设计中是无关紧要的。</p>
+<blockquote>
+<p><span class="highlight" data-annotation="%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%223B7HBALT%22%2C%22color%22%3A%22%23a28ae5%22%2C%22pageLabel%22%3A%2229%22%2C%22position%22%3A%7B%22pageIndex%22%3A28%2C%22rects%22%3A%5B%5B399.239%2C615.144%2C519.637%2C626.484%5D%2C%5B72%2C600.984%2C520.908%2C612.324%5D%2C%5B72%2C586.824%2C519.938%2C598.164%5D%2C%5B72%2C572.664%2C536.739%2C584.004%5D%2C%5B72%2C558.504%2C195.948%2C569.844%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2229%22%7D%7D" ztype="zhighlight"><a href="zotero://open-pdf/library/items/PR4L8HXG?page=29&#x26;annotation=3B7HBALT">“For this FIFO design, the greater consideration is to make sure that the counters cannot overrun their boundaries, which could cause missed full and empty flag detection. Even though the sampled gray count values between clock domains are often missed, the design is robust and all important gray count values are appropriately sampled”</a></span> <span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2229%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 29</a></span>)</span></p>
+</blockquote>
+<p>FIFO计数指针的任务是保证数据不发生冲突并保证不同时对某一寄存器进行读写。格雷码计数器只会存在编码丢失采样的情况，而不会出现误读，因此对读端来说这只可能出现假空的情况，对写端来说可能出现假满的情况，但是这都不会影响数据的安全性也不会导致数据的跨时钟风险。</p>
+<ul>
+<li>假空：当前为空的情况下，写指针+1，出现亚稳态采样丢失，此时读端认为FIFO为空。</li>
+<li>假满：当前为满的情况下，读指针+1，出现亚稳态采样丢失，此时写端会认为FIFO为满。</li>
+</ul>
+<h3 id="1-deep-x2F-2-register-异步FIFO同步器"><a href="#1-deep-x2F-2-register-异步FIFO同步器" class="headerlink" title="1-deep&#x2F;2-register 异步FIFO同步器"></a>1-deep&#x2F;2-register 异步FIFO同步器</h3><p><img src="/attachments/QAZIRTMD/EIWHGNIA.png" alt="\&lt;img alt=&quot;&quot; data-attachment-key=&quot;/attachments/QAZIRTMD/EIWHGNIA&quot; data-annotation=&quot;%7B%22attachmentURI%22%3A%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FPR4L8HXG%22%2C%22annotationKey%22%3A%22ZTLIDZ5W%22%2C%22color%22%3A%22%23ffd400%22%2C%22pageLabel%22%3A%2235%22%2C%22position%22%3A%7B%22pageIndex%22%3A34%2C%22rects%22%3A%5B%5B68.69845928099778%2C412.13799999999964%2C537.015407190022%2C648.7659574468083%5D%5D%7D%2C%22citationItem%22%3A%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2235%22%7D%7D&quot; width=&quot;781&quot; height=&quot;395&quot; src=&quot;attachments/EIWHGNIA.png&quot; ztype=&quot;zimage&quot;&gt;"><br><span class="citation" data-citation="%7B%22citationItems%22%3A%5B%7B%22uris%22%3A%5B%22http%3A%2F%2Fzotero.org%2Fusers%2F10602580%2Fitems%2FKPF9HYV5%22%5D%2C%22locator%22%3A%2235%22%7D%5D%2C%22properties%22%3A%7B%7D%7D" ztype="zcitation">(<span class="citation-item"><a href="zotero://select/library/items/KPF9HYV5">Cummings, 2008, p. 35</a></span>)</span> 1-deep&#x2F;2-register FIFO同步器结构</p>
+<p>这个似乎只用一个register也没有关系（一直让addr等于0就行），可以认为就是一个0bit的格雷码编码器带1bit的回环检测。</p>
+<h3 id="FIFO设计文献：Simulation-and-Synthesis-Techniques-for-Asynchronous-FIFO-Design"><a href="#FIFO设计文献：Simulation-and-Synthesis-Techniques-for-Asynchronous-FIFO-Design" class="headerlink" title="FIFO设计文献：Simulation and Synthesis Techniques for Asynchronous FIFO Design"></a>FIFO设计文献：Simulation and Synthesis Techniques for Asynchronous FIFO Design</h3><p>Cummings, Clifford E. 《Simulation and Synthesis Techniques for Asynchronous FIFO Design》, 2002年.</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>[1] C. E. Cummings, “Clock Domain Crossing (CDC) Design &amp; Verification Techniques Using SystemVerilog.” 2008.<br>[2] C. E. Cummings, “Simulation and Synthesis Techniques for Asynchronous FIFO Design.” 2002.</p>
+
+  <p><a class="classtest-link" href="/tags/note/" rel="tag">/note</a>, <a class="classtest-link" href="/tags/FPGA/" rel="tag">FPGA</a>, <a class="classtest-link" href="/tags/%E8%B7%A8%E6%97%B6%E9%92%9F%E5%9F%9F/" rel="tag">跨时钟域</a> — 2023年2月20日</p>
+  
+
+
+        </div>
+        <div class="row mt-2">
+  <h3>Search</h3>
+  <div><input id="search-text" title="search" class="search-text" type="text" placeholder="search......"></div>
+  <div style="margin-top: 1.5rem;">
+    <ul id="result"></ul>
+  </div>
+</div>
+        <div class="row mt-2">
+  
+    <div class="eight columns">
+      <p id="madewith">Made with ❤ and
+        <a class="footer-link icon" href="https://hexo.io" target="_blank" style="text-decoration: none;" rel="noreferrer" aria-label="Hexo.io">
+        <svg class="hexo svg-hov" width="14" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Hexo.js</title><path d="M12 .007L1.57 6.056V18.05L12 23.995l10.43-6.049V5.952L12 .007zm4.798 17.105l-.939.521-.939-.521V12.94H9.08v4.172l-.94.521-.938-.521V6.89l.939-.521.939.521v4.172h5.84V6.89l.94-.521.938.521v10.222z"/></svg>
+        </a>
+        
+        at <a href="https://en.wikipedia.org/wiki/Changchun" target="_blank" rel="noreferrer">Changchun,China</a>.</p>
+        
+    </div>
+
+    <!-- Sepcial thanks to https://simpleicons.org/ for the icons -->
+    <div class="four columns mb-3 posisi" >
+      
+      <a class="ml-0 footer-link icon" href="https://github.com/enifmaiii" target="_blank" style="text-decoration: none" rel="noreferrer" aria-label="GitHub">
+        <svg class="github svg-hov" width="18" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      </a>
+      
+
+      
+
+      
+
+      
+
+      
+
+    </div>
+  
+</div>
+
+      </div>
+
+    </div>
+
+  </div>
+  <script src="/js/nanobar.min.js"></script>
+
+  <script>
+    var options = {
+      classname: 'nanobar',
+      id: 'myNanobar'
+    };
+    var nanobar = new Nanobar(options);
+    nanobar.go(30);
+    nanobar.go(76);
+    nanobar.go(100);
+  </script>
+
+</body>
+
+</html>
